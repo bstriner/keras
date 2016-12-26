@@ -14,6 +14,7 @@ from .common import set_image_dim_ordering
 from .common import is_keras_tensor
 from .common import legacy_weight_ordering
 from .common import set_legacy_weight_ordering
+from .common import update, update_add, update_sub
 
 _keras_base_dir = os.path.expanduser('~')
 if not os.access(_keras_base_dir, os.W_OK):

@@ -199,18 +199,6 @@ def cast(x, dtype):
 # UPDATES OPS
 
 
-def update(x, new_x):
-    return (x, new_x)
-
-
-def update_add(x, increment):
-    return (x, x + increment)
-
-
-def update_sub(x, decrement):
-    return (x, x - decrement)
-
-
 def moving_average_update(variable, value, momentum):
     return (variable, variable * momentum + value * (1. - momentum))
 

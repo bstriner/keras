@@ -716,18 +716,6 @@ def cast(x, dtype):
 # UPDATES OPS
 
 
-def update(x, new_x):
-    return tf.assign(x, new_x)
-
-
-def update_add(x, increment):
-    return tf.assign_add(x, increment)
-
-
-def update_sub(x, decrement):
-    return tf.assign_sub(x, decrement)
-
-
 def moving_average_update(variable, value, momentum):
     try:
         return moving_averages.assign_moving_average(

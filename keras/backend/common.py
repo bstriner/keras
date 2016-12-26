@@ -215,3 +215,20 @@ def set_legacy_weight_ordering(value):
 
 def legacy_weight_ordering():
     return _LEGACY_WEIGHT_ORDERING
+
+
+# UPDATES OPS
+
+
+def update(x, new_x):
+    return (x, new_x)
+
+
+def update_add(x, increment):
+    return (x, x + increment)
+
+
+def update_sub(x, decrement):
+    return (x, x - decrement)
+
+
