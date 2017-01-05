@@ -2560,3 +2560,10 @@ def foldr(fn, elems, initializer=None, name=None):
         Same type and shape as initializer
     '''
     return tf.foldr(fn, elems, initializer=initializer, name=name)
+
+def get_backend():
+    '''
+    Get reference to backend module.
+    :return: backend module
+    '''
+    return tf

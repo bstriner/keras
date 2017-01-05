@@ -74,3 +74,8 @@ def backend():
     for determining the current backend.
     '''
     return _BACKEND
+
+# Copy any functions from the selected backend not already in keras.backend
+for func in dir(get_backend()):
+    if func not in globals():
+        globals()[func] = getattr(get_backend(), func)

@@ -2073,3 +2073,10 @@ def foldr(fn, elems, initializer=None, name=None):
     fn2 = lambda x, acc: fn(acc, x)
 
     return theano.foldr(fn2, elems, initializer, name=name)[0]
+
+def get_backend():
+    '''
+    Get reference to backend module.
+    :return: backend module
+    '''
+    return theano.tensor
