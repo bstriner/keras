@@ -2135,9 +2135,7 @@ def rnn(step_function, inputs, initial_states,
             else:
                 mask_ta = mask_ta.unpack(mask)
 
-            def _step(time, output_ta_t, *states):
-                current_input = input_ta.read(time)
-                mask_t = mask_ta.read(time)
+            def _step(current_input, mask_t, *states):
                 output, new_states = step_function(current_input,
                                                    tuple(states) +
                                                    tuple(constants))
@@ -2147,34 +2145,21 @@ def rnn(step_function, inputs, initial_states,
                                        stack([1, tf.shape(output)[1]]))
                 output = tf.where(tiled_mask_t, output, states[0])
                 new_states = [tf.where(tiled_mask_t, new_states[i], states[i]) for i in range(len(states))]
-                output_ta_t = output_ta_t.write(time, output)
-                return (time + 1, output_ta_t) + tuple(new_states)
+                return (output,) + tuple(new_states)
         else:
-            def _step(time, output_ta_t, *states):
-                current_input = input_ta.read(time)
+            def _step(current_input, *states):
                 output, new_states = step_function(current_input,
                                                    tuple(states) +
                                                    tuple(constants))
                 for state, new_state in zip(states, new_states):
                     new_state.set_shape(state.get_shape())
-                output_ta_t = output_ta_t.write(time, output)
-                return (time + 1, output_ta_t) + tuple(new_states)
+                return (output,) + tuple(new_states)
 
-        final_outputs = control_flow_ops.while_loop(
-            cond=lambda time, *_: time < time_steps,
-            body=_step,
-            loop_vars=(time, output_ta) + states,
-            parallel_iterations=32,
-            swap_memory=True)
-        last_time = final_outputs[0]
-        output_ta = final_outputs[1]
-        new_states = final_outputs[2:]
-
-        if hasattr(output_ta, 'stack'):
-            outputs = output_ta.stack()
-        else:
-            outputs = output_ta.pack()
-        last_output = output_ta.read(last_time - 1)
+        output_shape = tf.shape(step_function(inputs[0], *states))
+        final_outputs, _ = tf.scan(_step, elems=inputs, initializer=(tf.zeros(output_shape),)+states)
+        outputs = final_outputs[0]
+        last_output = outputs[-1]
+        new_states = final_outputs[1:]
 
     axes = [1, 0] + list(range(2, len(outputs.get_shape())))
     outputs = tf.transpose(outputs, axes)
