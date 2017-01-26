@@ -1957,7 +1957,7 @@ def stop_gradient(variables):
 
 def rnn(step_function, inputs, initial_states,
         go_backwards=False, mask=None, constants=None,
-        unroll=False, input_length=None):
+        unroll=False, input_length=None, output_dim=None):
     """Iterates over the time dimension of a tensor.
 
     # Arguments
@@ -2135,31 +2135,37 @@ def rnn(step_function, inputs, initial_states,
             else:
                 mask_ta = mask_ta.unpack(mask)
 
-            def _step(current_input, mask_t, *states):
+            def _step(_params, current_input):
+                _states = _params[0]
+                mask_t = _params[1]
                 output, new_states = step_function(current_input,
-                                                   tuple(states) +
+                                                   tuple(_states) +
                                                    tuple(constants))
-                for state, new_state in zip(states, new_states):
+                for state, new_state in zip(_states, new_states):
                     new_state.set_shape(state.get_shape())
                 tiled_mask_t = tf.tile(mask_t,
                                        stack([1, tf.shape(output)[1]]))
-                output = tf.where(tiled_mask_t, output, states[0])
-                new_states = [tf.where(tiled_mask_t, new_states[i], states[i]) for i in range(len(states))]
+                output = tf.where(tiled_mask_t, output, _states[0])
+                new_states = [tf.where(tiled_mask_t, new_states[i], _states[i]) for i in range(len(_states))]
                 return (output,) + tuple(new_states)
         else:
-            def _step(current_input, *states):
+            def _step(_params, current_input):
+                _states = _params[1]
                 output, new_states = step_function(current_input,
-                                                   tuple(states) +
+                                                   tuple(_states) +
                                                    tuple(constants))
-                for state, new_state in zip(states, new_states):
-                    new_state.set_shape(state.get_shape())
-                return (output,) + tuple(new_states)
-
-        output_shape = tf.shape(step_function(inputs[0], *states))
-        final_outputs, _ = tf.scan(_step, elems=inputs, initializer=(tf.zeros(output_shape),)+states)
+                #for state, new_state in zip(_states, new_states):
+                #    new_state.set_shape(state.get_shape())
+                return output, tuple(new_states)
+        if not output_dim:
+            output_tmp, _ = step_function(inputs[0], tuple(states)+tuple(constants))
+            initial_outputs = tf.zeros_like(output_tmp)
+        else:
+            initial_outputs = tf.zeros((tf.shape(inputs)[1], output_dim,))
+        final_outputs = tf.scan(_step, elems=inputs, initializer=(initial_outputs, tuple(states)))
         outputs = final_outputs[0]
         last_output = outputs[-1]
-        new_states = final_outputs[1:]
+        new_states = final_outputs[1]
 
     axes = [1, 0] + list(range(2, len(outputs.get_shape())))
     outputs = tf.transpose(outputs, axes)
